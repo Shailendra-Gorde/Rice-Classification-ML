@@ -1,0 +1,20 @@
+{
+  "total_predictions": 0,
+  "variety_counts": {
+    "Basmati rice": 0,
+    "Colam rice": 0,
+    "Indrayani rice": 0,
+    "Joha rice": 0,
+    "Matta rice": 0,
+    "Sona Masuri rice": 0,
+    "Kala Jira rice": 0,
+    "Ambemohar rice": 0,
+    "Ponni rice": 0,
+    "Jasmine rice": 0,
+    "Bamboo rice": 0,
+    "Mogara rice": 0,
+    "Brown rice": 0
+  },
+  "predictions": [],
+  "feature_statistics": {}
+}

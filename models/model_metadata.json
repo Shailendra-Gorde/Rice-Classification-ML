@@ -1,0 +1,92 @@
+{
+    "model_name": "Gradient Boosting",
+    "model_type": "GradientBoostingClassifier",
+    "num_features": 23,
+    "num_classes": 13,
+    "rice_varieties": [
+        "Basmati rice",
+        "Colam rice",
+        "Indrayani rice",
+        "Joha rice",
+        "Matta rice",
+        "Sona Masuri rice",
+        "Kala Jira rice",
+        "Ambemohar rice",
+        "Ponni rice",
+        "Jasmine rice",
+        "Bamboo rice",
+        "Mogara rice",
+        "Brown rice"
+    ],
+    "accuracy": 0.2857142857142857,
+    "train_accuracy": 1.0,
+    "training_samples": 53,
+    "test_samples": 14,
+    "samples_per_variety": {
+        "Basmati rice": 7,
+        "Colam rice": 5,
+        "Indrayani rice": 5,
+        "Joha rice": 5,
+        "Matta rice": 5,
+        "Sona Masuri rice": 5,
+        "Kala Jira rice": 5,
+        "Ambemohar rice": 5,
+        "Ponni rice": 5,
+        "Jasmine rice": 5,
+        "Bamboo rice": 5,
+        "Mogara rice": 5,
+        "Brown rice": 5
+    },
+    "varieties_with_data": [
+        "Basmati rice",
+        "Colam rice",
+        "Indrayani rice",
+        "Joha rice",
+        "Matta rice",
+        "Sona Masuri rice",
+        "Kala Jira rice",
+        "Ambemohar rice",
+        "Ponni rice",
+        "Jasmine rice",
+        "Bamboo rice",
+        "Mogara rice",
+        "Brown rice"
+    ],
+    "varieties_without_data": [],
+    "all_models_tested": [
+        "Random Forest",
+        "Gradient Boosting",
+        "LightGBM",
+        "XGBoost",
+        "Ensemble"
+    ],
+    "model_comparison": [
+        {
+            "name": "Random Forest",
+            "train_acc": 1.0,
+            "test_acc": 0.14285714285714285
+        },
+        {
+            "name": "Gradient Boosting",
+            "train_acc": 1.0,
+            "test_acc": 0.2857142857142857
+        },
+        {
+            "name": "LightGBM",
+            "train_acc": 1.0,
+            "test_acc": 0.07142857142857142
+        },
+        {
+            "name": "XGBoost",
+            "train_acc": 1.0,
+            "test_acc": 0.2857142857142857
+        },
+        {
+            "name": "Ensemble",
+            "train_acc": 1.0,
+            "test_acc": 0.21428571428571427
+        }
+    ],
+    "note": "Model trained for all 13 varieties. Best model: Gradient Boosting with 28.57% accuracy. For 100% accuracy, add more training images for all varieties.",
+    "created": "2026-01-22T04:26:37.617771"
+}

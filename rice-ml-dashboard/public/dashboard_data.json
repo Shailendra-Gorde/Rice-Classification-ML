@@ -1,0 +1,438 @@
+{
+  "project": {
+    "name": "Indian Rice Varieties Classification",
+    "description": "Machine Learning classification of 13 Indian rice varieties from images using morphological and visual features",
+    "total_samples": 0,
+    "test_samples": 0,
+    "train_samples": 0,
+    "num_features": 23,
+    "num_classes": 13,
+    "class_names": [
+      "Basmati rice",
+      "Colam rice",
+      "Indrayani rice",
+      "Joha rice",
+      "Matta rice",
+      "Sona Masuri rice",
+      "Kala Jira rice",
+      "Ambemohar rice",
+      "Ponni rice",
+      "Jasmine rice",
+      "Bamboo rice",
+      "Mogara rice",
+      "Brown rice"
+    ]
+  },
+  "dataset": {
+    "features": {
+      "all_features": [
+        "Color_Mean_R",
+        "Color_Mean_G",
+        "Color_Mean_B",
+        "Color_Mean_H",
+        "Color_Mean_S",
+        "Color_Mean_V",
+        "Texture_Contrast",
+        "Texture_Dissimilarity",
+        "Texture_Homogeneity",
+        "Texture_Energy",
+        "Texture_LBP_Mean",
+        "Texture_LBP_Std",
+        "Size_Area",
+        "Size_Perimeter",
+        "Shape_MajorAxisLength",
+        "Shape_MinorAxisLength",
+        "Shape_ConvexArea",
+        "Shape_Eccentricity",
+        "Shape_Extent",
+        "Shape_Roundness",
+        "Shape_AspectRatio",
+        "Shape_EquivDiameter",
+        "Shape_Solidity"
+      ],
+      "color_features": [
+        "Color_Mean_R",
+        "Color_Mean_G",
+        "Color_Mean_B",
+        "Color_Mean_H",
+        "Color_Mean_S",
+        "Color_Mean_V"
+      ],
+      "texture_features": [
+        "Texture_Contrast",
+        "Texture_Dissimilarity",
+        "Texture_Homogeneity",
+        "Texture_Energy",
+        "Texture_LBP_Mean",
+        "Texture_LBP_Std"
+      ],
+      "size_features": [
+        "Size_Area",
+        "Size_Perimeter"
+      ],
+      "shape_features": [
+        "Shape_MajorAxisLength",
+        "Shape_MinorAxisLength",
+        "Shape_ConvexArea",
+        "Shape_Eccentricity",
+        "Shape_Extent",
+        "Shape_Roundness",
+        "Shape_AspectRatio",
+        "Shape_EquivDiameter",
+        "Shape_Solidity"
+      ],
+      "feature_descriptions": {
+        "Color_Mean_R": "Mean Red channel value (RGB color space)",
+        "Color_Mean_G": "Mean Green channel value (RGB color space)",
+        "Color_Mean_B": "Mean Blue channel value (RGB color space)",
+        "Color_Mean_H": "Mean Hue value (HSV color space)",
+        "Color_Mean_S": "Mean Saturation value (HSV color space)",
+        "Color_Mean_V": "Mean Value/Brightness (HSV color space)",
+        "Texture_Contrast": "GLCM contrast - measures local intensity variation",
+        "Texture_Dissimilarity": "GLCM dissimilarity - measures texture variation",
+        "Texture_Homogeneity": "GLCM homogeneity - measures texture uniformity",
+        "Texture_Energy": "GLCM energy - measures textural uniformity",
+        "Texture_LBP_Mean": "Local Binary Pattern mean - texture pattern descriptor",
+        "Texture_LBP_Std": "Local Binary Pattern standard deviation - texture variation",
+        "Size_Area": "Area of the rice grain in pixels",
+        "Size_Perimeter": "Perimeter of the rice grain in pixels",
+        "Shape_MajorAxisLength": "Length of the major axis of the ellipse fitted to the grain",
+        "Shape_MinorAxisLength": "Length of the minor axis of the ellipse fitted to the grain",
+        "Shape_ConvexArea": "Area of the smallest convex polygon containing the grain",
+        "Shape_Eccentricity": "Eccentricity of the ellipse (elongation measure)",
+        "Shape_Extent": "Ratio of grain area to bounding box area",
+        "Shape_Roundness": "Measure of circularity (4\u03c0\u00d7Area/Perimeter\u00b2)",
+        "Shape_AspectRatio": "Ratio of MajorAxisLength to MinorAxisLength",
+        "Shape_EquivDiameter": "Diameter of a circle with the same area as the grain",
+        "Shape_Solidity": "Ratio of grain area to convex hull area"
+      }
+    },
+    "statistics": {
+      "Color_Mean_R": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Color_Mean_G": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Color_Mean_B": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Color_Mean_H": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Color_Mean_S": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Color_Mean_V": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Texture_Contrast": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Texture_Dissimilarity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Texture_Homogeneity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Texture_Energy": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Texture_LBP_Mean": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Texture_LBP_Std": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Size_Area": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Size_Perimeter": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_MajorAxisLength": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_MinorAxisLength": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_ConvexArea": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_Eccentricity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_Extent": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_Roundness": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_AspectRatio": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_EquivDiameter": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      },
+      "Shape_Solidity": {
+        "mean": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0
+      }
+    },
+    "class_distribution": {
+      "Basmati rice": 0,
+      "Colam rice": 0,
+      "Indrayani rice": 0,
+      "Joha rice": 0,
+      "Matta rice": 0,
+      "Sona Masuri rice": 0,
+      "Kala Jira rice": 0,
+      "Ambemohar rice": 0,
+      "Ponni rice": 0,
+      "Jasmine rice": 0,
+      "Bamboo rice": 0,
+      "Mogara rice": 0,
+      "Brown rice": 0
+    },
+    "imbalance_ratio": 1.0
+  },
+  "best_model": {
+    "name": "Random Forest",
+    "performance": {
+      "accuracy": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "roc_auc": 0.0
+    },
+    "confusion_matrix": {
+      "note": "Multi-class confusion matrix for 13 varieties"
+    }
+  },
+  "all_models": [
+    {
+      "Model": "Random Forest",
+      "Accuracy": 0.0,
+      "Precision": 0.0,
+      "Recall": 0.0,
+      "F1-Score": 0.0,
+      "ROC-AUC": 0.0
+    }
+  ],
+  "feature_importance": {
+    "top_5": [
+      {
+        "feature": "Shape_MajorAxisLength",
+        "importance": 0.15
+      },
+      {
+        "feature": "Size_Perimeter",
+        "importance": 0.12
+      },
+      {
+        "feature": "Size_Area",
+        "importance": 0.1
+      },
+      {
+        "feature": "Shape_ConvexArea",
+        "importance": 0.09
+      },
+      {
+        "feature": "Color_Mean_H",
+        "importance": 0.08
+      }
+    ]
+  },
+  "model_rankings": [
+    {
+      "rank": 1,
+      "model": "Random Forest",
+      "score": 0.0
+    },
+    {
+      "rank": 2,
+      "model": "Gradient Boosting",
+      "score": 0.0
+    },
+    {
+      "rank": 3,
+      "model": "LightGBM",
+      "score": 0.0
+    },
+    {
+      "rank": 4,
+      "model": "XGBoost",
+      "score": 0.0
+    },
+    {
+      "rank": 5,
+      "model": "K-Nearest Neighbors",
+      "score": 0.0
+    },
+    {
+      "rank": 6,
+      "model": "Support Vector Machine",
+      "score": 0.0
+    },
+    {
+      "rank": 7,
+      "model": "Logistic Regression",
+      "score": 0.0
+    },
+    {
+      "rank": 8,
+      "model": "Decision Tree",
+      "score": 0.0
+    }
+  ],
+  "insights": {
+    "key_findings": [
+      "Classification of 13 Indian rice varieties from images",
+      "24 features extracted automatically from images",
+      "Features include color, texture, size, and shape measurements",
+      "Multi-class classification with macro-averaged metrics"
+    ],
+    "recommendations": [
+      "Train model with actual rice variety images for best performance",
+      "Ensure good image quality and lighting for accurate feature extraction",
+      "Model can be used for automated rice quality control and sorting"
+    ]
+  }
+}
