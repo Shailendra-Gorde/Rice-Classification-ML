@@ -1,5 +1,5 @@
 {
-  "total_predictions": 0,
+  "total_predictions": 1,
   "variety_counts": {
     "Basmati rice": 0,
     "Colam rice": 0,
@@ -11,10 +11,245 @@
     "Ambemohar rice": 0,
     "Ponni rice": 0,
     "Jasmine rice": 0,
-    "Bamboo rice": 0,
+    "Bamboo rice": 1,
     "Mogara rice": 0,
     "Brown rice": 0
   },
-  "predictions": [],
-  "feature_statistics": {}
+  "predictions": [
+    {
+      "id": 1,
+      "timestamp": "2026-02-16T17:40:59.380879",
+      "variety": "Bamboo rice",
+      "confidence": 99.99999357991817,
+      "image_filename": "prediction_20260216_174059_215569_WhatsApp_Image_2026-01-21_at_11.33.00_AM.jpeg",
+      "image_path": "/prediction_images/prediction_20260216_174059_215569_WhatsApp_Image_2026-01-21_at_11.33.00_AM.jpeg",
+      "features": {
+        "Color_Mean_R": 96.53258024691358,
+        "Color_Mean_G": 72.27504197530864,
+        "Color_Mean_B": 56.45084814814815,
+        "Color_Mean_H": 9.098743209876544,
+        "Color_Mean_S": 84.65014074074074,
+        "Color_Mean_V": 96.54912592592592,
+        "Texture_Contrast": 0.20997325472802492,
+        "Texture_Dissimilarity": 0.0983020409251879,
+        "Texture_Homogeneity": 0.9620161009176899,
+        "Texture_Energy": 0.8183571246003313,
+        "Texture_LBP_Mean": 22.214836308450295,
+        "Texture_LBP_Std": 5.230128590287407,
+        "Size_Area": 808201.0,
+        "Size_Perimeter": 3596.0,
+        "Shape_MajorAxisLength": 898.9998779296875,
+        "Shape_MinorAxisLength": 898.9998779296875,
+        "Shape_ConvexArea": 808201.0,
+        "Shape_Eccentricity": 0.0,
+        "Shape_Extent": 0.997779012345679,
+        "Shape_Roundness": 0.7853981633974483,
+        "Shape_AspectRatio": 1.0,
+        "Shape_EquivDiameter": 1014.4128712188658,
+        "Shape_Solidity": 1.0
+      },
+      "top_3_predictions": [
+        {
+          "variety": "Bamboo rice",
+          "confidence": 99.99999357991817
+        },
+        {
+          "variety": "Matta rice",
+          "confidence": 2.2880310328204775e-06
+        },
+        {
+          "variety": "Jasmine rice",
+          "confidence": 2.216385813284872e-06
+        }
+      ],
+      "prediction_error": null,
+      "prediction": "Bamboo rice"
+    }
+  ],
+  "feature_statistics": {
+    "Color_Mean_R": {
+      "values": [
+        96.53258024691358
+      ],
+      "mean": 96.53258024691358,
+      "min": 96.53258024691358,
+      "max": 96.53258024691358
+    },
+    "Color_Mean_G": {
+      "values": [
+        72.27504197530864
+      ],
+      "mean": 72.27504197530864,
+      "min": 72.27504197530864,
+      "max": 72.27504197530864
+    },
+    "Color_Mean_B": {
+      "values": [
+        56.45084814814815
+      ],
+      "mean": 56.45084814814815,
+      "min": 56.45084814814815,
+      "max": 56.45084814814815
+    },
+    "Color_Mean_H": {
+      "values": [
+        9.098743209876544
+      ],
+      "mean": 9.098743209876544,
+      "min": 9.098743209876544,
+      "max": 9.098743209876544
+    },
+    "Color_Mean_S": {
+      "values": [
+        84.65014074074074
+      ],
+      "mean": 84.65014074074074,
+      "min": 84.65014074074074,
+      "max": 84.65014074074074
+    },
+    "Color_Mean_V": {
+      "values": [
+        96.54912592592592
+      ],
+      "mean": 96.54912592592592,
+      "min": 96.54912592592592,
+      "max": 96.54912592592592
+    },
+    "Texture_Contrast": {
+      "values": [
+        0.20997325472802492
+      ],
+      "mean": 0.20997325472802492,
+      "min": 0.20997325472802492,
+      "max": 0.20997325472802492
+    },
+    "Texture_Dissimilarity": {
+      "values": [
+        0.0983020409251879
+      ],
+      "mean": 0.0983020409251879,
+      "min": 0.0983020409251879,
+      "max": 0.0983020409251879
+    },
+    "Texture_Homogeneity": {
+      "values": [
+        0.9620161009176899
+      ],
+      "mean": 0.9620161009176899,
+      "min": 0.9620161009176899,
+      "max": 0.9620161009176899
+    },
+    "Texture_Energy": {
+      "values": [
+        0.8183571246003313
+      ],
+      "mean": 0.8183571246003313,
+      "min": 0.8183571246003313,
+      "max": 0.8183571246003313
+    },
+    "Texture_LBP_Mean": {
+      "values": [
+        22.214836308450295
+      ],
+      "mean": 22.214836308450295,
+      "min": 22.214836308450295,
+      "max": 22.214836308450295
+    },
+    "Texture_LBP_Std": {
+      "values": [
+        5.230128590287407
+      ],
+      "mean": 5.230128590287407,
+      "min": 5.230128590287407,
+      "max": 5.230128590287407
+    },
+    "Size_Area": {
+      "values": [
+        808201.0
+      ],
+      "mean": 808201.0,
+      "min": 808201.0,
+      "max": 808201.0
+    },
+    "Size_Perimeter": {
+      "values": [
+        3596.0
+      ],
+      "mean": 3596.0,
+      "min": 3596.0,
+      "max": 3596.0
+    },
+    "Shape_MajorAxisLength": {
+      "values": [
+        898.9998779296875
+      ],
+      "mean": 898.9998779296875,
+      "min": 898.9998779296875,
+      "max": 898.9998779296875
+    },
+    "Shape_MinorAxisLength": {
+      "values": [
+        898.9998779296875
+      ],
+      "mean": 898.9998779296875,
+      "min": 898.9998779296875,
+      "max": 898.9998779296875
+    },
+    "Shape_ConvexArea": {
+      "values": [
+        808201.0
+      ],
+      "mean": 808201.0,
+      "min": 808201.0,
+      "max": 808201.0
+    },
+    "Shape_Eccentricity": {
+      "values": [
+        0.0
+      ],
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "Shape_Extent": {
+      "values": [
+        0.997779012345679
+      ],
+      "mean": 0.997779012345679,
+      "min": 0.997779012345679,
+      "max": 0.997779012345679
+    },
+    "Shape_Roundness": {
+      "values": [
+        0.7853981633974483
+      ],
+      "mean": 0.7853981633974483,
+      "min": 0.7853981633974483,
+      "max": 0.7853981633974483
+    },
+    "Shape_AspectRatio": {
+      "values": [
+        1.0
+      ],
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "Shape_EquivDiameter": {
+      "values": [
+        1014.4128712188658
+      ],
+      "mean": 1014.4128712188658,
+      "min": 1014.4128712188658,
+      "max": 1014.4128712188658
+    },
+    "Shape_Solidity": {
+      "values": [
+        1.0
+      ],
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    }
+  }
 }

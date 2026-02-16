@@ -41,15 +41,20 @@ const DatasetPage = ({ data }) => {
 
   const { project, dataset, feature_importance, prediction_history } = data;
 
-  // Use dynamic class distribution if available, otherwise use static
+  // Use dataset class distribution (from actual dataset images, not predictions)
   const classDistribution = dataset.class_distribution || {};
-  const classDistData = Object.entries(classDistribution)
-    .filter(([name, value]) => value > 0) // Only show varieties with predictions
-    .map(([name, value]) => ({
-      name,
-      value
-    }))
-    .sort((a, b) => b.value - a.value); // Sort by count descending
+  // Show all classes from the dataset, even if count is 0
+  const classDistData = project.class_names
+    ? project.class_names.map(variety => ({
+        name: variety,
+        value: classDistribution[variety] || 0
+      }))
+    : Object.entries(classDistribution)
+        .map(([name, value]) => ({
+          name,
+          value: value || 0
+        }))
+        .sort((a, b) => b.value - a.value); // Sort by count descending
 
   const featureImportanceData = feature_importance.top_5;
 
@@ -83,10 +88,10 @@ const DatasetPage = ({ data }) => {
                   Total Samples
                 </Typography>
                 <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#90caf9' }}>
-                  {prediction_history?.total || project.total_samples || 0}
+                  {project.total_samples || 0}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  {prediction_history?.total ? 'Predictions made' : 'Rice grain samples'}
+                  Rice grain samples in dataset
                 </Typography>
               </CardContent>
             </Card>
@@ -149,7 +154,7 @@ const DatasetPage = ({ data }) => {
                   {dataset.imbalance_ratio ? dataset.imbalance_ratio.toFixed(2) : '1.00'}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  {prediction_history?.total ? 'Distribution ratio' : 'Relatively balanced'}
+                  Dataset distribution ratio
                 </Typography>
               </CardContent>
             </Card>
@@ -169,21 +174,19 @@ const DatasetPage = ({ data }) => {
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
                   Class Distribution
-                  {prediction_history?.total && (
-                    <Chip 
-                      label={`${prediction_history.total} predictions`} 
-                      size="small" 
-                      sx={{ ml: 2 }}
-                      color="primary"
-                    />
-                  )}
+                  <Chip 
+                    label="Dataset images" 
+                    size="small" 
+                    sx={{ ml: 2 }}
+                    color="primary"
+                  />
                 </Typography>
                 {classDistData.length > 0 ? (
                   <>
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
                         <Pie
-                          data={classDistData}
+                          data={classDistData.filter(d => d.value > 0)}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
@@ -194,7 +197,7 @@ const DatasetPage = ({ data }) => {
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {classDistData.map((entry, index) => (
+                          {classDistData.filter(d => d.value > 0).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -206,7 +209,7 @@ const DatasetPage = ({ data }) => {
                         <Chip
                           key={entry.name}
                           label={`${entry.name}: ${entry.value}`}
-                          sx={{ backgroundColor: COLORS[index % COLORS.length] }}
+                          sx={{ backgroundColor: entry.value > 0 ? COLORS[index % COLORS.length] : '#e0e0e0' }}
                           size="small"
                         />
                       ))}
@@ -215,7 +218,7 @@ const DatasetPage = ({ data }) => {
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
-                      No predictions yet. Upload images to see distribution.
+                      No dataset images found. Add images to data/images/ folders.
                     </Typography>
                   </Box>
                 )}

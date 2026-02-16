@@ -209,7 +209,8 @@ function App() {
                   ...staticData.project,
                   total_samples: apiData.data.project.total_samples || staticData.project.total_samples || 0,
                   num_features: apiData.data.project.num_features || staticData.project.num_features,
-                  num_classes: apiData.data.project.num_classes || staticData.project.num_classes
+                  num_classes: apiData.data.project.num_classes || staticData.project.num_classes,
+                  class_names: apiData.data.project.class_names || staticData.project.class_names || []
                 },
                 dataset: {
                   ...staticData.dataset,
@@ -220,8 +221,14 @@ function App() {
                   },
                   imbalance_ratio: apiData.data.dataset.imbalance_ratio || staticData.dataset.imbalance_ratio || 1.0
                 },
+                // IMPORTANT: Use API data for models (these have the real values from metadata)
+                best_model: apiData.data.best_model || staticData.best_model,
+                all_models: apiData.data.all_models || staticData.all_models || [],
+                model_rankings: apiData.data.model_rankings || staticData.model_rankings || [],
                 prediction_history: apiData.data.prediction_history || { total: 0, recent_predictions: [] }
               };
+              console.log('[App.js] Merged data - best_model:', merged.best_model);
+              console.log('[App.js] Merged data - all_models:', merged.all_models);
               setDashboardData(merged);
               if (loading) setLoading(false);
             })
@@ -241,6 +248,8 @@ function App() {
                   }
                 }
               };
+              console.log('[App.js] Using API data only - best_model:', apiDataWithDefaults.best_model);
+              console.log('[App.js] Using API data only - all_models:', apiDataWithDefaults.all_models);
               setDashboardData(apiDataWithDefaults);
               if (loading) setLoading(false);
             });

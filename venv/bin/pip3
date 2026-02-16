@@ -1,4 +1,4 @@
-#!/Users/prasannaprasadthorat/Downloads/Rice-Classification-ML/venv/bin/python3.11
+#!/Users/prasannaprasadthorat/Desktop/Rice-Classification-ML/venv/bin/python3.11
 # -*- coding: utf-8 -*-
 import re
 import sys

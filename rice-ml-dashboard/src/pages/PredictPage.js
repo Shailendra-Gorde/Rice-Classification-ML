@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -44,6 +44,7 @@ function PredictPage() {
   const [error, setError] = useState(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [stream, setStream] = useState(null);
+  const [videoReady, setVideoReady] = useState(false);
   
   const fileInputRef = useRef(null);
   const cameraVideoRef = useRef(null);
@@ -72,16 +73,22 @@ function PredictPage() {
     }
   };
 
-  // Handle camera capture
+  // Handle camera capture - Open dialog first, then start camera
   const startCamera = async () => {
+    // Open dialog first
+    setCameraOpen(true);
+    setError(null);
+    setVideoReady(false);
+    
     try {
       // Check if getUserMedia is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setError('Camera API not available in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
+        setCameraOpen(false);
         return;
       }
 
-      // Try different camera constraints for Mac
+      // Camera constraints
       let constraints = {
         video: {
           width: { ideal: 1280 },
@@ -89,42 +96,10 @@ function PredictPage() {
         }
       };
       
-      // On Mac, don't use facingMode (that's for mobile)
+      // Request camera access
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
       setStream(mediaStream);
-      if (cameraVideoRef.current) {
-        cameraVideoRef.current.srcObject = mediaStream;
-        
-        // Wait for video metadata and then play
-        const video = cameraVideoRef.current;
-        
-        const handleLoadedMetadata = () => {
-          video.play()
-            .then(() => {
-              console.log('Video playing successfully');
-              setError(null);
-            })
-            .catch(err => {
-              console.error('Error playing video:', err);
-              setError('Camera started but video not playing. Try refreshing the page.');
-            });
-        };
-        
-        video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        video.addEventListener('loadeddata', () => {
-          console.log('Video data loaded');
-        });
-        
-        // Force play attempt
-        setTimeout(() => {
-          if (video.paused) {
-            video.play().catch(err => console.error('Delayed play failed:', err));
-          }
-        }, 100);
-      }
-      setCameraOpen(true);
-      setError(null);
+      
     } catch (err) {
       let errorMessage = 'Could not access camera. ';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -137,9 +112,80 @@ function PredictPage() {
         errorMessage += `Error: ${err.message}`;
       }
       setError(errorMessage);
+      setCameraOpen(false);
       console.error('Camera error:', err);
     }
   };
+
+  // Effect to handle video stream setup when dialog opens and stream is available
+  useEffect(() => {
+    if (cameraOpen && stream && cameraVideoRef.current) {
+      const video = cameraVideoRef.current;
+      
+      // Set the stream
+      video.srcObject = stream;
+      setVideoReady(false);
+      
+      // Event handlers
+      const handleLoadedMetadata = () => {
+        console.log('Video metadata loaded');
+        video.play()
+          .then(() => {
+            console.log('Video playing successfully');
+            setError(null);
+          })
+          .catch(err => {
+            console.error('Error playing video:', err);
+            setError('Camera started but video not playing. Try refreshing the page.');
+          });
+      };
+      
+      const handleCanPlay = () => {
+        console.log('Video can play, readyState:', video.readyState, 'dimensions:', video.videoWidth, 'x', video.videoHeight);
+        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+          setVideoReady(true);
+          console.log('Video is ready for capture');
+        }
+      };
+      
+      const handlePlaying = () => {
+        console.log('Video is playing');
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          setVideoReady(true);
+        }
+      };
+      
+      // Add event listeners
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('loadeddata', handleCanPlay);
+      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('playing', handlePlaying);
+      
+      // Force load and play
+      video.load();
+      
+      // Fallback: try to play after a short delay
+      setTimeout(() => {
+        if (video.paused && video.readyState >= 2) {
+          video.play().catch(err => {
+            console.error('Delayed play failed:', err);
+          });
+        }
+        // Final check for readiness
+        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+          setVideoReady(true);
+        }
+      }, 300);
+      
+      // Cleanup function
+      return () => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('loadeddata', handleCanPlay);
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('playing', handlePlaying);
+      };
+    }
+  }, [cameraOpen, stream]);
 
   const stopCamera = () => {
     if (stream) {
@@ -149,44 +195,57 @@ function PredictPage() {
     if (cameraVideoRef.current) {
       cameraVideoRef.current.srcObject = null;
     }
+    setVideoReady(false);
     setCameraOpen(false);
   };
 
   const capturePhoto = () => {
-    if (cameraVideoRef.current && canvasRef.current) {
-      const video = cameraVideoRef.current;
-      const canvas = canvasRef.current;
+    if (!cameraVideoRef.current || !canvasRef.current) {
+      setError('Camera not initialized. Please try opening the camera again.');
+      return;
+    }
+
+    const video = cameraVideoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Check if video is ready
+    if (video.readyState < 2) {
+      setError('Camera not ready. Please wait a moment and try again.');
+      return;
+    }
+    
+    // Get actual video dimensions
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+    
+    if (width === 0 || height === 0) {
+      setError('Invalid video dimensions. Please try again.');
+      return;
+    }
+    
+    // Set canvas dimensions
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      setError('Failed to get canvas context. Please try again.');
+      return;
+    }
+    
+    // Draw video frame to canvas
+    try {
+      ctx.drawImage(video, 0, 0, width, height);
       
-      // Check if video is ready
-      if (video.readyState < 2) {
-        setError('Camera not ready. Please wait a moment and try again.');
-        return;
-      }
-      
-      // Get actual video dimensions
-      const width = video.videoWidth || 640;
-      const height = video.videoHeight || 480;
-      
-      if (width === 0 || height === 0) {
-        setError('Invalid video dimensions. Please try again.');
-        return;
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      
-      // Draw video frame to canvas
-      try {
-        ctx.drawImage(video, 0, 0, width, height);
+      // Convert canvas to blob with better error handling
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setError('Failed to capture image. Please try again.');
+          console.error('toBlob returned null');
+          return;
+        }
         
-        // Convert canvas to blob
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            setError('Failed to capture image. Please try again.');
-            return;
-          }
-          
+        try {
           const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
           setSelectedImage(file);
           
@@ -199,13 +258,15 @@ function PredictPage() {
           
           // Clear any errors
           setError(null);
-        }, 'image/jpeg', 0.95);
-      } catch (err) {
-        console.error('Error capturing photo:', err);
-        setError('Failed to capture photo. Please try again.');
-      }
-    } else {
-      setError('Camera not initialized. Please try opening the camera again.');
+          console.log('Photo captured successfully');
+        } catch (fileErr) {
+          console.error('Error creating file:', fileErr);
+          setError('Failed to process captured image. Please try again.');
+        }
+      }, 'image/jpeg', 0.95);
+    } catch (err) {
+      console.error('Error capturing photo:', err);
+      setError(`Failed to capture photo: ${err.message}. Please try again.`);
     }
   };
 
@@ -692,8 +753,7 @@ function PredictPage() {
         <DialogTitle>Capture Photo</DialogTitle>
         <DialogContent>
           <Box sx={{ position: 'relative', width: '100%', minHeight: '400px', backgroundColor: '#000', borderRadius: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Box
-              component="video"
+            <video
               ref={cameraVideoRef}
               autoPlay
               playsInline
@@ -704,8 +764,9 @@ function PredictPage() {
                 height: 'auto',
                 maxHeight: '500px',
                 objectFit: 'contain',
-                display: 'block',
-                backgroundColor: '#000'
+                display: stream ? 'block' : 'none',
+                backgroundColor: '#000',
+                zIndex: 1
               }}
             />
             <canvas 
@@ -728,7 +789,7 @@ function PredictPage() {
                 <Typography color="white">Starting camera...</Typography>
               </Box>
             )}
-            {stream && cameraVideoRef.current && cameraVideoRef.current.readyState < 2 && (
+            {stream && !videoReady && (
               <Box
                 sx={{
                   position: 'absolute',
@@ -744,6 +805,24 @@ function PredictPage() {
                 <Typography color="white">Loading video stream...</Typography>
               </Box>
             )}
+            {videoReady && stream && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 20,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  bgcolor: 'rgba(0, 0, 0, 0.6)',
+                  color: 'white',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                  zIndex: 10
+                }}
+              >
+                <Typography variant="body2">Camera ready - Click Capture to take photo</Typography>
+              </Box>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
@@ -752,9 +831,9 @@ function PredictPage() {
             onClick={capturePhoto} 
             variant="contained" 
             startIcon={<PhotoCamera />}
-            disabled={!stream}
+            disabled={!stream || !videoReady}
           >
-            Capture
+            {videoReady ? 'Capture' : 'Loading...'}
           </Button>
         </DialogActions>
       </Dialog>
