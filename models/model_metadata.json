@@ -20,10 +20,14 @@
     ],
     "accuracy": 0.2857142857142857,
     "train_accuracy": 1.0,
-    "training_samples": 53,
+    "precision": 0.3095238095238095,
+    "recall": 0.2857142857142857,
+    "f1_score": 0.2738095238095238,
+    "roc_auc": 0.6886446886446886,
+    "training_samples": 52,
     "test_samples": 14,
     "samples_per_variety": {
-        "Basmati rice": 7,
+        "Basmati rice": 5,
         "Colam rice": 5,
         "Indrayani rice": 5,
         "Joha rice": 5,
@@ -33,7 +37,7 @@
         "Ambemohar rice": 5,
         "Ponni rice": 5,
         "Jasmine rice": 5,
-        "Bamboo rice": 5,
+        "Bamboo rice": 6,
         "Mogara rice": 5,
         "Brown rice": 5
     },
@@ -64,7 +68,7 @@
         {
             "name": "Random Forest",
             "train_acc": 1.0,
-            "test_acc": 0.14285714285714285
+            "test_acc": 0.07142857142857142
         },
         {
             "name": "Gradient Boosting",
@@ -74,19 +78,19 @@
         {
             "name": "LightGBM",
             "train_acc": 1.0,
-            "test_acc": 0.07142857142857142
+            "test_acc": 0.14285714285714285
         },
         {
             "name": "XGBoost",
             "train_acc": 1.0,
-            "test_acc": 0.2857142857142857
+            "test_acc": 0.21428571428571427
         },
         {
             "name": "Ensemble",
             "train_acc": 1.0,
-            "test_acc": 0.21428571428571427
+            "test_acc": 0.2857142857142857
         }
     ],
     "note": "Model trained for all 13 varieties. Best model: Gradient Boosting with 28.57% accuracy. For 100% accuracy, add more training images for all varieties.",
-    "created": "2026-01-22T04:26:37.617771"
+    "created": "2026-02-17T08:59:52.303046"
 }
