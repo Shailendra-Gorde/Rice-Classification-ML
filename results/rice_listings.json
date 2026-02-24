@@ -1,0 +1,55 @@
+{
+  "listings": [
+    {
+      "id": "2b323d1f-f736-41ba-a1e9-a2eb2dbd87cb",
+      "rice_name": "Basmati",
+      "cost": 11.0,
+      "area": "Punjab",
+      "image_filenames": [
+        "listing_20260223_112028_785047_WhatsApp_Image_2026-01-21_at_10.49.10_AM.jpeg"
+      ],
+      "seller_contact": "9876543210",
+      "seller_email": "abc@gmail.com",
+      "created_at": "2026-02-23T11:20:28.789273",
+      "purchase_requests": [
+        {
+          "contact": "9988776655",
+          "email": "xyz@gmail.com",
+          "created_at": "2026-02-23T11:20:52.523295"
+        }
+      ]
+    },
+    {
+      "id": "9b88ad3d-2c6e-47e7-9c1c-ce6a34481f0e",
+      "rice_name": "Joho",
+      "cost": 13.0,
+      "area": "Maharashtra",
+      "image_filenames": [
+        "listing_20260223_113131_992802_WhatsApp_Image_2026-01-21_at_10.58.52_AM_1.jpeg"
+      ],
+      "seller_contact": "8769878672",
+      "seller_email": "shailesh@gmail.com",
+      "created_at": "2026-02-23T11:31:31.996153",
+      "purchase_requests": [
+        {
+          "contact": "8789887652",
+          "email": "jjjj@gmail.com",
+          "created_at": "2026-02-23T11:32:01.604314"
+        }
+      ]
+    },
+    {
+      "id": "7e5ba75a-2b63-440e-b145-fae4cf092948",
+      "rice_name": "Basmati",
+      "cost": 14.0,
+      "area": "Punjab",
+      "image_filenames": [
+        "listing_20260223_113505_857165_WhatsApp_Image_2026-01-21_at_10.49.10_AM.jpeg"
+      ],
+      "seller_contact": "9876556789",
+      "seller_email": "kkk@gmail.com",
+      "created_at": "2026-02-23T11:35:05.860709",
+      "purchase_requests": []
+    }
+  ]
+}

@@ -22,13 +22,15 @@ import {
   Analytics as AnalyticsIcon,
   Science as ScienceIcon,
   Image as ImageIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  Store as StoreIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import DatasetPage from './pages/DatasetPage';
 import AnalysisPage from './pages/AnalysisPage';
 import PredictPage from './pages/PredictPage';
 import HistoryPage from './pages/HistoryPage';
+import MarketplacePage from './pages/MarketplacePage';
 
 const drawerWidth = 260;
 
@@ -70,6 +72,8 @@ const getPageTitle = (pathname) => {
     return 'Rice Type Classification - Dataset';
   } else if (pathname === '/analysis') {
     return 'Rice Type Classification - Analysis';
+  } else if (pathname === '/marketplace') {
+    return 'Rice Type Classification - Marketplace';
   }
   return 'Rice Type Classification - ML Dashboard';
 };
@@ -81,6 +85,7 @@ function DashboardContent({ dashboardData, onDataRefresh }) {
   const menuItems = [
     { text: 'Predict', icon: <ImageIcon />, path: '/predict', page: 'predict' },
     { text: 'History', icon: <HistoryIcon />, path: '/history', page: 'history' },
+    { text: 'Marketplace', icon: <StoreIcon />, path: '/marketplace', page: 'marketplace' },
     { text: 'Dataset', icon: <DatasetIcon />, path: '/dataset', page: 'dataset' },
     { text: 'Analysis', icon: <AnalyticsIcon />, path: '/analysis', page: 'analysis' },
   ];
@@ -175,6 +180,7 @@ function DashboardContent({ dashboardData, onDataRefresh }) {
               <Route path="/" element={<Navigate to="/predict" replace />} />
               <Route path="/predict" element={<PredictPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/marketplace" element={<MarketplacePage />} />
               <Route path="/dataset" element={<DatasetPage data={dashboardData} />} />
               <Route path="/analysis" element={<AnalysisPage data={dashboardData} onDataRefresh={onDataRefresh} />} />
             </Routes>

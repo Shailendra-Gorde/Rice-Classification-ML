@@ -9,11 +9,13 @@ import numpy as np
 import cv2
 import joblib
 import os
+import re
 import json
 import glob
 from datetime import datetime
 from collections import defaultdict
 from werkzeug.utils import secure_filename
+import uuid
 from src.image_preprocessing import RiceImageFeatureExtractor, INDIAN_RICE_VARIETIES
 
 app = Flask(__name__)
@@ -88,6 +90,34 @@ def save_prediction_history():
 
 # Load on startup
 load_prediction_history()
+
+# Rice marketplace listings (sell/purchase with contact, email)
+LISTINGS_FILE = 'results/rice_listings.json'
+
+def load_listings():
+    """Load rice listings from file."""
+    try:
+        if os.path.exists(LISTINGS_FILE):
+            with open(LISTINGS_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"[WARNING] Could not load listings: {e}")
+    return {'listings': []}
+
+def save_listings(data):
+    """Save rice listings to file."""
+    try:
+        os.makedirs('results', exist_ok=True)
+        temp_file = LISTINGS_FILE + '.tmp'
+        with open(temp_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        if os.path.exists(LISTINGS_FILE):
+            os.remove(LISTINGS_FILE)
+        os.rename(temp_file, LISTINGS_FILE)
+        return True
+    except Exception as e:
+        print(f"[ERROR] Could not save listings: {e}")
+        return False
 
 # Load model and scaler
 MODEL_PATH = 'models/best_model.pkl'
@@ -903,6 +933,176 @@ def clear_history():
         })
     except Exception as e:
         return jsonify({'error': f'Error clearing history: {str(e)}'}), 500
+
+
+# ---------- Rice Marketplace: Search, Sell, Purchase ----------
+
+@app.route('/api/listings', methods=['GET'])
+def get_listings():
+    """Get rice listings with optional search: name, cost_min, cost_max, area."""
+    data = load_listings()
+    listings = data.get('listings', [])
+    name = request.args.get('name', '').strip().lower()
+    cost_min = request.args.get('cost_min', type=float)
+    cost_max = request.args.get('cost_max', type=float)
+    area = request.args.get('area', '').strip().lower()
+    if name:
+        listings = [l for l in listings if name in (l.get('rice_name') or '').lower()]
+    if cost_min is not None:
+        listings = [l for l in listings if (l.get('cost') or 0) >= cost_min]
+    if cost_max is not None:
+        listings = [l for l in listings if (l.get('cost') or 0) <= cost_max]
+    if area:
+        listings = [l for l in listings if area in (l.get('area') or '').lower()]
+    return jsonify({'success': True, 'listings': listings})
+
+
+def _validate_seller_contact(contact):
+    """Contact must be 10 digits (digits only, after stripping non-digits)."""
+    digits = re.sub(r'\D', '', contact or '')
+    return len(digits) == 10 and digits.isdigit()
+
+
+def _validate_email(email):
+    """Basic valid email format."""
+    if not email or not email.strip():
+        return False
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email.strip()))
+
+
+@app.route('/api/listings', methods=['POST'])
+def create_listing():
+    """Create a listing (sell rice): rice_name, cost, area, image (required), seller_contact (10 digits), seller_email (valid). All fields compulsory."""
+    try:
+        rice_name = (request.form.get('rice_name') or '').strip()
+        cost = request.form.get('cost')
+        area = (request.form.get('area') or '').strip()
+        seller_contact = (request.form.get('seller_contact') or '').strip()
+        seller_email = (request.form.get('seller_email') or '').strip()
+        if not rice_name:
+            return jsonify({'error': 'Rice name is required'}), 400
+        if not area:
+            return jsonify({'error': 'Area (where rice is grown) is required'}), 400
+        try:
+            cost_val = float(cost) if cost else None
+        except ValueError:
+            cost_val = None
+        if cost_val is None or cost_val < 0:
+            return jsonify({'error': 'Cost is required and must be 0 or more'}), 400
+        if not seller_contact:
+            return jsonify({'error': 'Seller contact number is required'}), 400
+        if not _validate_seller_contact(seller_contact):
+            return jsonify({'error': 'Contact number must be exactly 10 digits'}), 400
+        if not seller_email:
+            return jsonify({'error': 'Seller email is required'}), 400
+        if not _validate_email(seller_email):
+            return jsonify({'error': 'Please enter a valid email address'}), 400
+        # Image is compulsory
+        image_filenames = []
+        if 'image' not in request.files:
+            return jsonify({'error': 'Image upload is required'}), 400
+        file = request.files['image']
+        if not file or not file.filename:
+            return jsonify({'error': 'Image upload is required'}), 400
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid image type. Use PNG, JPG, JPEG, GIF or BMP'}), 400
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        fn = secure_filename(file.filename) or 'image.jpg'
+        image_filename = f"listing_{timestamp}_{fn}"
+        image_path = os.path.join(UPLOAD_FOLDER, image_filename)
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        file.save(image_path)
+        try:
+            import shutil
+            public_path = os.path.join(PUBLIC_IMAGES_FOLDER, image_filename)
+            os.makedirs(PUBLIC_IMAGES_FOLDER, exist_ok=True)
+            shutil.copy2(image_path, public_path)
+        except Exception:
+            pass
+        image_filenames.append(image_filename)
+        listing_id = str(uuid.uuid4())
+        listing = {
+            'id': listing_id,
+            'rice_name': rice_name,
+            'cost': cost_val,
+            'area': area,
+            'image_filenames': image_filenames,
+            'seller_contact': seller_contact,
+            'seller_email': seller_email,
+            'created_at': datetime.now().isoformat(),
+            'purchase_requests': []
+        }
+        data = load_listings()
+        data.setdefault('listings', []).append(listing)
+        save_listings(data)
+        return jsonify({'success': True, 'listing': listing})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/listings/<listing_id>/purchase', methods=['POST'])
+def purchase_listing(listing_id):
+    """Express purchase interest: contact, email."""
+    try:
+        contact = (request.json.get('contact') or request.form.get('contact') or '').strip()
+        email = (request.json.get('email') or request.form.get('email') or '').strip()
+        if not contact:
+            return jsonify({'error': 'Contact number is required'}), 400
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+        data = load_listings()
+        for listing in data.get('listings', []):
+            if listing.get('id') == listing_id:
+                listing.setdefault('purchase_requests', []).append({
+                    'contact': contact,
+                    'email': email,
+                    'created_at': datetime.now().isoformat()
+                })
+                save_listings(data)
+                return jsonify({'success': True, 'message': 'Purchase interest recorded'})
+        return jsonify({'error': 'Listing not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/listings/<listing_id>', methods=['GET'])
+def get_listing(listing_id):
+    """Get a single listing by id."""
+    data = load_listings()
+    for listing in data.get('listings', []):
+        if listing.get('id') == listing_id:
+            return jsonify({'success': True, 'listing': listing})
+    return jsonify({'error': 'Listing not found'}), 404
+
+
+@app.route('/api/purchase-list', methods=['GET'])
+def get_purchase_list():
+    """Get a flat list of all purchases: who purchased which rice and when."""
+    data = load_listings()
+    purchases = []
+    for listing in data.get('listings', []):
+        rice_name = listing.get('rice_name') or 'Unnamed'
+        listing_id = listing.get('id', '')
+        area = listing.get('area') or ''
+        cost = listing.get('cost', 0)
+        seller_contact = listing.get('seller_contact') or ''
+        seller_email = listing.get('seller_email') or ''
+        for req in listing.get('purchase_requests', []):
+            purchases.append({
+                'listing_id': listing_id,
+                'rice_name': rice_name,
+                'area': area,
+                'cost': cost,
+                'seller_contact': seller_contact,
+                'seller_email': seller_email,
+                'buyer_contact': req.get('contact', ''),
+                'buyer_email': req.get('email', ''),
+                'purchased_at': req.get('created_at', ''),
+            })
+    # Newest first
+    purchases.sort(key=lambda x: x.get('purchased_at', ''), reverse=True)
+    return jsonify({'success': True, 'purchases': purchases})
 
 
 if __name__ == '__main__':
