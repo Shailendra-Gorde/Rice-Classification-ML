@@ -23,7 +23,9 @@ import {
   Science as ScienceIcon,
   Image as ImageIcon,
   History as HistoryIcon,
-  Store as StoreIcon
+  Store as StoreIcon,
+  CompareArrows as CompareIcon,
+  AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import DatasetPage from './pages/DatasetPage';
@@ -31,6 +33,8 @@ import AnalysisPage from './pages/AnalysisPage';
 import PredictPage from './pages/PredictPage';
 import HistoryPage from './pages/HistoryPage';
 import MarketplacePage from './pages/MarketplacePage';
+import ComparePage from './pages/ComparePage';
+import AdminPage from './pages/AdminPage';
 
 const drawerWidth = 260;
 
@@ -74,6 +78,10 @@ const getPageTitle = (pathname) => {
     return 'Rice Type Classification - Analysis';
   } else if (pathname === '/marketplace') {
     return 'Rice Type Classification - Marketplace';
+  } else if (pathname === '/compare') {
+    return 'Rice Type Classification - Compare';
+  } else if (pathname === '/admin') {
+    return 'Rice Type Classification - Admin';
   }
   return 'Rice Type Classification - ML Dashboard';
 };
@@ -84,10 +92,12 @@ function DashboardContent({ dashboardData, onDataRefresh }) {
 
   const menuItems = [
     { text: 'Predict', icon: <ImageIcon />, path: '/predict', page: 'predict' },
+    { text: 'Compare', icon: <CompareIcon />, path: '/compare', page: 'compare' },
     { text: 'History', icon: <HistoryIcon />, path: '/history', page: 'history' },
     { text: 'Marketplace', icon: <StoreIcon />, path: '/marketplace', page: 'marketplace' },
     { text: 'Dataset', icon: <DatasetIcon />, path: '/dataset', page: 'dataset' },
     { text: 'Analysis', icon: <AnalyticsIcon />, path: '/analysis', page: 'analysis' },
+    { text: 'Admin', icon: <AdminIcon />, path: '/admin', page: 'admin' },
   ];
 
   // Get dynamic page title based on current route
@@ -181,6 +191,8 @@ function DashboardContent({ dashboardData, onDataRefresh }) {
               <Route path="/predict" element={<PredictPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/marketplace" element={<MarketplacePage />} />
+              <Route path="/compare" element={<ComparePage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/dataset" element={<DatasetPage data={dashboardData} />} />
               <Route path="/analysis" element={<AnalysisPage data={dashboardData} onDataRefresh={onDataRefresh} />} />
             </Routes>

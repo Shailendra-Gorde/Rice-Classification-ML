@@ -170,6 +170,62 @@ def convert_image_to_array(image_file):
     return image
 
 
+def _predict_single_image(image_array, save_to_history=False, image_filename=None):
+    """
+    Run feature extraction and model prediction on a single image array.
+    Returns dict with prediction, confidence, top_3_predictions, extracted_features, prediction_error.
+    Does not save to prediction history unless save_to_history=True and image_filename is set.
+    """
+    features = feature_extractor.extract_all_features(image_array)
+    feature_vector = np.array([[features.get(name, 0.0) for name in feature_extractor.feature_names]])
+    if scaler is not None:
+        try:
+            expected = scaler.n_features_in_ if hasattr(scaler, 'n_features_in_') else None
+            actual = feature_vector.shape[1]
+            if expected and expected != actual:
+                feature_vector_scaled = (feature_vector - np.mean(feature_vector, axis=0)) / (np.std(feature_vector, axis=0) + 1e-8)
+            else:
+                feature_vector_scaled = scaler.transform(feature_vector)
+        except Exception:
+            feature_vector_scaled = (feature_vector - np.mean(feature_vector, axis=0)) / (np.std(feature_vector, axis=0) + 1e-8)
+    else:
+        feature_vector_scaled = (feature_vector - np.mean(feature_vector, axis=0)) / (np.std(feature_vector, axis=0) + 1e-8)
+    prediction_error = None
+    predicted_variety = "Unknown"
+    confidence = 0.0
+    top_3_predictions = []
+    if model is not None:
+        try:
+            if hasattr(model, 'n_features_in_') and model.n_features_in_ != feature_vector_scaled.shape[1]:
+                top_3_predictions = [{'variety': INDIAN_RICE_VARIETIES[i], 'confidence': 100.0/len(INDIAN_RICE_VARIETIES)} for i in range(min(3, len(INDIAN_RICE_VARIETIES)))]
+                predicted_variety = top_3_predictions[0]['variety'] if top_3_predictions else "Unknown"
+                confidence = top_3_predictions[0]['confidence'] if top_3_predictions else 0.0
+            else:
+                proba = model.predict_proba(feature_vector_scaled)[0]
+                idx = int(model.predict(feature_vector_scaled)[0])
+                predicted_variety = INDIAN_RICE_VARIETIES[idx] if idx < len(INDIAN_RICE_VARIETIES) else "Unknown"
+                confidence = float(proba[idx] * 100)
+                top_3_indices = np.argsort(proba)[-3:][::-1]
+                top_3_predictions = [{'variety': INDIAN_RICE_VARIETIES[i], 'confidence': float(proba[i] * 100)} for i in top_3_indices]
+        except Exception as e:
+            prediction_error = str(e)
+            top_3_predictions = [{'variety': INDIAN_RICE_VARIETIES[i], 'confidence': 100.0/len(INDIAN_RICE_VARIETIES)} for i in range(min(3, len(INDIAN_RICE_VARIETIES)))]
+            predicted_variety = top_3_predictions[0]['variety'] if top_3_predictions else "Unknown"
+            confidence = top_3_predictions[0]['confidence'] if top_3_predictions else 0.0
+    else:
+        prediction_error = "Model not loaded."
+        top_3_predictions = [{'variety': INDIAN_RICE_VARIETIES[i], 'confidence': 100.0/len(INDIAN_RICE_VARIETIES)} for i in range(min(3, len(INDIAN_RICE_VARIETIES)))]
+        predicted_variety = top_3_predictions[0]['variety'] if top_3_predictions else "Unknown"
+        confidence = top_3_predictions[0]['confidence'] if top_3_predictions else 0.0
+    return {
+        'prediction': predicted_variety,
+        'confidence': confidence,
+        'top_3_predictions': top_3_predictions,
+        'extracted_features': features,
+        'prediction_error': prediction_error
+    }
+
+
 @app.route('/', methods=['GET'])
 def root():
     """Root endpoint with API information."""
@@ -515,6 +571,36 @@ def extract_features():
         
     except Exception as e:
         return jsonify({'error': f'Error extracting features: {str(e)}'}), 500
+
+
+@app.route('/api/compare', methods=['POST'])
+def compare_images():
+    """Compare two rice images: side-by-side prediction and features. Send as multipart: image1, image2."""
+    try:
+        if 'image1' not in request.files or 'image2' not in request.files:
+            return jsonify({'error': 'Please provide both image1 and image2'}), 400
+        file1 = request.files['image1']
+        file2 = request.files['image2']
+        if not file1 or not file1.filename:
+            return jsonify({'error': 'First image is required'}), 400
+        if not file2 or not file2.filename:
+            return jsonify({'error': 'Second image is required'}), 400
+        if not allowed_file(file1.filename) or not allowed_file(file2.filename):
+            return jsonify({'error': 'Invalid image type. Use PNG, JPG, JPEG, GIF or BMP'}), 400
+        img1 = convert_image_to_array(file1)
+        img2 = convert_image_to_array(file2)
+        result1 = _predict_single_image(img1, save_to_history=False)
+        result2 = _predict_single_image(img2, save_to_history=False)
+        return jsonify({
+            'success': True,
+            'result1': result1,
+            'result2': result2,
+            'feature_names': feature_extractor.feature_names
+        })
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Error comparing images: {str(e)}'}), 500
 
 
 @app.route('/api/rice-varieties', methods=['GET'])
@@ -1103,6 +1189,120 @@ def get_purchase_list():
     # Newest first
     purchases.sort(key=lambda x: x.get('purchased_at', ''), reverse=True)
     return jsonify({'success': True, 'purchases': purchases})
+
+
+# ---------- Admin / Researcher dashboard ----------
+
+def _get_admin_stats():
+    """Aggregate stats for admin dashboard: predictions, variety distribution, listings, purchases."""
+    total_predictions = prediction_history.get('total_predictions', 0)
+    variety_distribution = prediction_history.get('variety_counts', {})
+    predictions_by_date = []
+    for p in prediction_history.get('predictions', []):
+        ts = p.get('timestamp', '')[:10]
+        if ts:
+            predictions_by_date.append(ts)
+    from collections import Counter
+    date_counts = Counter(predictions_by_date)
+    predictions_by_date = [{'date': d, 'count': c} for d, c in sorted(date_counts.items(), reverse=True)[:30]]
+    data = load_listings()
+    listings = data.get('listings', [])
+    total_listings = len(listings)
+    variety_listing_count = defaultdict(int)
+    total_purchases = 0
+    for lst in listings:
+        name = lst.get('rice_name') or 'Unnamed'
+        variety_listing_count[name] += 1
+        total_purchases += len(lst.get('purchase_requests', []))
+    listings_by_variety = [{'rice_name': k, 'count': v} for k, v in sorted(variety_listing_count.items(), key=lambda x: -x[1])]
+    return {
+        'total_predictions': total_predictions,
+        'variety_distribution': variety_distribution,
+        'predictions_by_date': predictions_by_date,
+        'total_listings': total_listings,
+        'listings_by_variety': listings_by_variety,
+        'total_purchases': total_purchases,
+    }
+
+
+@app.route('/api/admin/stats', methods=['GET'])
+def admin_stats():
+    """Get aggregated stats for admin/researcher dashboard."""
+    try:
+        stats = _get_admin_stats()
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/export/purchases', methods=['GET'])
+def admin_export_purchases():
+    """Export purchase list as CSV."""
+    from flask import Response
+    data = load_listings()
+    rows = []
+    for listing in data.get('listings', []):
+        rice_name = listing.get('rice_name') or 'Unnamed'
+        area = listing.get('area') or ''
+        cost = listing.get('cost', 0)
+        seller_contact = listing.get('seller_contact') or ''
+        seller_email = listing.get('seller_email') or ''
+        for req in listing.get('purchase_requests', []):
+            rows.append({
+                'rice_name': rice_name,
+                'area': area,
+                'cost': cost,
+                'seller_contact': seller_contact,
+                'seller_email': seller_email,
+                'buyer_contact': req.get('contact', ''),
+                'buyer_email': req.get('email', ''),
+                'purchased_at': req.get('created_at', ''),
+            })
+    rows.sort(key=lambda x: x.get('purchased_at', ''), reverse=True)
+    import csv
+    import io
+    buf = io.StringIO()
+    if rows:
+        writer = csv.DictWriter(buf, fieldnames=['rice_name', 'area', 'cost', 'seller_contact', 'seller_email', 'buyer_contact', 'buyer_email', 'purchased_at'])
+        writer.writeheader()
+        writer.writerows(rows)
+    resp = Response(buf.getvalue(), mimetype='text/csv')
+    resp.headers['Content-Disposition'] = 'attachment; filename=rice_purchases.csv'
+    return resp
+
+
+@app.route('/api/admin/export/listings', methods=['GET'])
+def admin_export_listings():
+    """Export all listings as JSON or CSV (format=json or format=csv)."""
+    from flask import Response
+    data = load_listings()
+    listings = data.get('listings', [])
+    fmt = request.args.get('format', 'json').lower()
+    if fmt == 'csv':
+        import csv
+        import io
+        buf = io.StringIO()
+        if listings:
+            fieldnames = ['id', 'rice_name', 'cost', 'area', 'seller_contact', 'seller_email', 'created_at', 'image_filenames', 'purchase_count']
+            writer = csv.DictWriter(buf, fieldnames=fieldnames)
+            writer.writeheader()
+            for lst in listings:
+                row = {
+                    'id': lst.get('id', ''),
+                    'rice_name': lst.get('rice_name', ''),
+                    'cost': lst.get('cost', 0),
+                    'area': lst.get('area', ''),
+                    'seller_contact': lst.get('seller_contact', ''),
+                    'seller_email': lst.get('seller_email', ''),
+                    'created_at': lst.get('created_at', ''),
+                    'image_filenames': ';'.join(lst.get('image_filenames', [])),
+                    'purchase_count': len(lst.get('purchase_requests', [])),
+                }
+                writer.writerow(row)
+        resp = Response(buf.getvalue(), mimetype='text/csv')
+        resp.headers['Content-Disposition'] = 'attachment; filename=rice_listings.csv'
+        return resp
+    return jsonify({'success': True, 'listings': listings})
 
 
 if __name__ == '__main__':
