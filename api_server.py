@@ -170,6 +170,44 @@ def convert_image_to_array(image_file):
     return image
 
 
+def _is_likely_rice_image(features, image_shape):
+    """
+    Check that we have a valid detected region and plausible (non–obviously-non-rice) image.
+    Kept permissive so real rice (single grain, few grains, or many grains) always passes.
+    Only rejects: no contour, whole-image blob, invalid shape, or clearly non-rice colors.
+    """
+    msg_not_rice = "This doesn't look like a rice grain image. Please upload a clear photo of rice grain(s) on a plain background."
+    if not features:
+        return False, "Could not analyze the image. Please upload a clear photo of rice grain(s)."
+    h, w = int(image_shape[0]), int(image_shape[1])
+    total_pixels = h * w
+    if total_pixels < 100:
+        return False, "Image is too small. Please upload a clearer rice grain image."
+    area = float(features.get('Size_Area', 0) or 0)
+    # No or tiny contour: nothing usable detected
+    min_area = max(300, 0.0005 * total_pixels)
+    if area < min_area:
+        return False, "No rice grain detected. Please upload a clear photo of rice grain(s) on a plain, contrasting background."
+    # Reject only if almost the entire image is one blob (e.g. full scene) – allow single grain, few grains, or cluster
+    if area > 0.90 * total_pixels:
+        return False, msg_not_rice
+    # Reject only impossible or extreme shapes (not elongated vs round – rice can be single grain or cluster)
+    aspect_ratio = float(features.get('Shape_AspectRatio', 1) or 1)
+    if aspect_ratio < 0.15 or aspect_ratio > 25:
+        return False, msg_not_rice
+    # Reject non-rice colors. Rice is white/cream/brown (never blue- or green-dominant).
+    r = float(features.get('Color_Mean_R', 128) or 128)
+    g = float(features.get('Color_Mean_G', 128) or 128)
+    b = float(features.get('Color_Mean_B', 128) or 128)
+    # Blue dominant (e.g. water bottle, sky)
+    if b > r + 10 and b > g + 10:
+        return False, msg_not_rice
+    # Strong green dominant (e.g. grass, foliage)
+    if g > r + 35 and g > b + 35:
+        return False, msg_not_rice
+    return True, None
+
+
 def _predict_single_image(image_array, save_to_history=False, image_filename=None):
     """
     Run feature extraction and model prediction on a single image array.
@@ -328,6 +366,12 @@ def predict():
         # Extract features
         features = feature_extractor.extract_all_features(image_array)
         
+        # Validate: reject non-rice images (random photos, no grain detected, etc.)
+        is_rice, rice_error = _is_likely_rice_image(features, image_array.shape)
+        if not is_rice:
+            print(f"[REJECT] Not a rice image: {rice_error}")
+            return jsonify({'error': rice_error, 'code': 'NOT_RICE_IMAGE'}), 400
+        
         # Prepare feature vector in correct order
         feature_vector = np.array([[features.get(name, 0.0) for name in feature_extractor.feature_names]])
         
@@ -429,6 +473,14 @@ def predict():
                 {'variety': INDIAN_RICE_VARIETIES[i], 'confidence': 100/len(INDIAN_RICE_VARIETIES)}
                 for i in range(min(3, len(INDIAN_RICE_VARIETIES)))
             ]
+        
+        # Reject only when model is very uncertain (likely bad image or not rice)
+        LOW_CONFIDENCE_THRESHOLD = 10.0
+        if confidence < LOW_CONFIDENCE_THRESHOLD:
+            return jsonify({
+                'error': "We couldn't identify this as a rice variety. Please upload a clear photo of rice grain(s) on a plain background.",
+                'code': 'NOT_RICE_IMAGE'
+            }), 400
         
         # Store prediction in history (always store if we have features)
         if features:
@@ -591,6 +643,18 @@ def compare_images():
         img2 = convert_image_to_array(file2)
         result1 = _predict_single_image(img1, save_to_history=False)
         result2 = _predict_single_image(img2, save_to_history=False)
+        # Validate both images are likely rice
+        ok1, err1 = _is_likely_rice_image(result1.get('extracted_features') or {}, img1.shape)
+        ok2, err2 = _is_likely_rice_image(result2.get('extracted_features') or {}, img2.shape)
+        if not ok1:
+            return jsonify({'error': f'Sample 1: {err1}', 'code': 'NOT_RICE_IMAGE'}), 400
+        if not ok2:
+            return jsonify({'error': f'Sample 2: {err2}', 'code': 'NOT_RICE_IMAGE'}), 400
+        LOW_CONFIDENCE_THRESHOLD = 10.0
+        if (result1.get('confidence') or 0) < LOW_CONFIDENCE_THRESHOLD:
+            return jsonify({'error': 'Sample 1: We couldn\'t identify this as a rice variety. Please upload a clear photo of rice grain(s).', 'code': 'NOT_RICE_IMAGE'}), 400
+        if (result2.get('confidence') or 0) < LOW_CONFIDENCE_THRESHOLD:
+            return jsonify({'error': 'Sample 2: We couldn\'t identify this as a rice variety. Please upload a clear photo of rice grain(s).', 'code': 'NOT_RICE_IMAGE'}), 400
         return jsonify({
             'success': True,
             'result1': result1,
@@ -1129,24 +1193,71 @@ def create_listing():
 
 @app.route('/api/listings/<listing_id>/purchase', methods=['POST'])
 def purchase_listing(listing_id):
-    """Express purchase interest: contact, email."""
+    """
+    Express purchase interest.
+    Required: contact, email, address, quantity_kg.
+    Auto-calculates total_price = cost_per_kg * quantity_kg and stores an estimated delivery date/day.
+    """
     try:
-        contact = (request.json.get('contact') or request.form.get('contact') or '').strip()
-        email = (request.json.get('email') or request.form.get('email') or '').strip()
+        # Support both JSON and form-encoded payloads
+        payload = request.get_json(silent=True) or request.form
+        contact = (payload.get('contact') or '').strip()
+        email = (payload.get('email') or '').strip()
+        address = (payload.get('address') or '').strip()
+        quantity_kg_raw = (str(payload.get('quantity_kg')) if payload.get('quantity_kg') is not None else '').strip()
+
         if not contact:
             return jsonify({'error': 'Contact number is required'}), 400
         if not email:
             return jsonify({'error': 'Email is required'}), 400
+        if not address:
+            return jsonify({'error': 'Delivery address is required'}), 400
+        if not quantity_kg_raw:
+            return jsonify({'error': 'Quantity (in kg) is required'}), 400
+
+        try:
+            quantity_kg = float(quantity_kg_raw)
+        except ValueError:
+            return jsonify({'error': 'Quantity must be a valid number (in kg)'}) , 400
+
+        if quantity_kg <= 0:
+            return jsonify({'error': 'Quantity must be greater than 0 kg'}), 400
+
         data = load_listings()
         for listing in data.get('listings', []):
             if listing.get('id') == listing_id:
-                listing.setdefault('purchase_requests', []).append({
+                cost_per_kg = float(listing.get('cost') or 0)
+                total_price = round(cost_per_kg * quantity_kg, 2)
+
+                now = datetime.now()
+                # Simple delivery estimate: 3 days from now
+                from datetime import timedelta
+                delivery_dt = now + timedelta(days=3)
+                delivery_iso = delivery_dt.isoformat()
+                delivery_day_name = delivery_dt.strftime('%A')
+
+                purchase_entry = {
                     'contact': contact,
                     'email': email,
-                    'created_at': datetime.now().isoformat()
-                })
+                    'address': address,
+                    'quantity_kg': quantity_kg,
+                    'total_price': total_price,
+                    'created_at': now.isoformat(),
+                    'delivery_date': delivery_iso,
+                    'delivery_day': delivery_day_name,
+                }
+
+                listing.setdefault('purchase_requests', []).append(purchase_entry)
                 save_listings(data)
-                return jsonify({'success': True, 'message': 'Purchase interest recorded'})
+
+                return jsonify({
+                    'success': True,
+                    'message': 'Purchase interest recorded',
+                    'total_price': total_price,
+                    'delivery_date': delivery_iso,
+                    'delivery_day': delivery_day_name
+                })
+
         return jsonify({'error': 'Listing not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1164,7 +1275,7 @@ def get_listing(listing_id):
 
 @app.route('/api/purchase-list', methods=['GET'])
 def get_purchase_list():
-    """Get a flat list of all purchases: who purchased which rice and when."""
+    """Get a flat list of all purchases: who purchased which rice, how much, for how much and when it will be delivered."""
     data = load_listings()
     purchases = []
     for listing in data.get('listings', []):
@@ -1184,7 +1295,12 @@ def get_purchase_list():
                 'seller_email': seller_email,
                 'buyer_contact': req.get('contact', ''),
                 'buyer_email': req.get('email', ''),
+                'buyer_address': req.get('address', ''),
+                'quantity_kg': req.get('quantity_kg', 0),
+                'total_price': req.get('total_price', 0),
                 'purchased_at': req.get('created_at', ''),
+                'delivery_date': req.get('delivery_date', ''),
+                'delivery_day': req.get('delivery_day', ''),
             })
     # Newest first
     purchases.sort(key=lambda x: x.get('purchased_at', ''), reverse=True)

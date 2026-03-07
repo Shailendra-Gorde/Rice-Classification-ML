@@ -82,6 +82,9 @@ function MarketplacePage() {
   const [purchaseListing, setPurchaseListing] = useState(null);
   const [purchaseContact, setPurchaseContact] = useState('');
   const [purchaseEmail, setPurchaseEmail] = useState('');
+  const [purchaseAddress, setPurchaseAddress] = useState('');
+  const [purchaseQuantityKg, setPurchaseQuantityKg] = useState('');
+  const [purchaseEstimatedTotal, setPurchaseEstimatedTotal] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
 
   // Purchase list (who purchased which rice and when)
@@ -223,20 +226,46 @@ function MarketplacePage() {
       setError('Email is required');
       return;
     }
+    if (!purchaseAddress.trim()) {
+      setError('Delivery address is required');
+      return;
+    }
+    const qtyNum = parseFloat(purchaseQuantityKg);
+    if (purchaseQuantityKg === '' || isNaN(qtyNum) || qtyNum <= 0) {
+      setError('Quantity (in kg) is required and must be greater than 0');
+      return;
+    }
     setPurchasing(true);
     setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/listings/${purchaseListing.id}/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact: purchaseContact.trim(), email: purchaseEmail.trim() }),
+        body: JSON.stringify({
+          contact: purchaseContact.trim(),
+          email: purchaseEmail.trim(),
+          address: purchaseAddress.trim(),
+          quantity_kg: qtyNum,
+        }),
       });
       const data = await response.json();
       if (data.success) {
-        setSuccessMsg('Purchase interest recorded. Seller will contact you.');
+        const msgParts = [];
+        msgParts.push('Purchase interest recorded.');
+        if (typeof data.total_price === 'number') {
+          msgParts.push(`Estimated total price: ₹${Number(data.total_price).toLocaleString()}.`);
+        }
+        if (data.delivery_day && data.delivery_date) {
+          const dt = new Date(data.delivery_date);
+          msgParts.push(`Estimated delivery: ${data.delivery_day}, ${dt.toLocaleDateString()}.`);
+        }
+        setSuccessMsg(msgParts.join(' '));
         setPurchaseListing(null);
         setPurchaseContact('');
         setPurchaseEmail('');
+        setPurchaseAddress('');
+        setPurchaseQuantityKg('');
+        setPurchaseEstimatedTotal(null);
         loadPurchaseList();
         setTimeout(() => setSuccessMsg(null), 4000);
       } else {
@@ -443,10 +472,47 @@ function MarketplacePage() {
         <form onSubmit={handlePurchaseSubmit}>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Contact number and email are required so the seller can reach you.
+              Enter your contact details, delivery address, and quantity (in kg). Total price will be calculated from the listing cost.
             </Typography>
             <TextField fullWidth label="Contact number *" value={purchaseContact} onChange={(e) => setPurchaseContact(e.target.value)} margin="dense" placeholder="e.g. +91 98765 43210" required />
             <TextField fullWidth type="email" label="Email *" value={purchaseEmail} onChange={(e) => setPurchaseEmail(e.target.value)} margin="dense" placeholder="buyer@example.com" required />
+            <TextField
+              fullWidth
+              label="Delivery address *"
+              value={purchaseAddress}
+              onChange={(e) => setPurchaseAddress(e.target.value)}
+              margin="dense"
+              placeholder="House/Flat, Street, City, Pincode"
+              multiline
+              minRows={2}
+              required
+            />
+            <TextField
+              fullWidth
+              type="number"
+              label="Quantity (kg) *"
+              value={purchaseQuantityKg}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPurchaseQuantityKg(val);
+                const num = parseFloat(val);
+                if (purchaseListing && !isNaN(num) && num > 0) {
+                  const estimated = Number(purchaseListing.cost) * num;
+                  setPurchaseEstimatedTotal(estimated);
+                } else {
+                  setPurchaseEstimatedTotal(null);
+                }
+              }}
+              margin="dense"
+              placeholder="e.g. 10"
+              inputProps={{ min: 0, step: 0.5 }}
+              required
+            />
+            {purchaseListing && purchaseEstimatedTotal !== null && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Price per kg: ₹{Number(purchaseListing.cost).toLocaleString()} — Estimated total: <strong>₹{Number(purchaseEstimatedTotal).toLocaleString()}</strong>
+              </Typography>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setPurchaseListing(null)}>Cancel</Button>
@@ -478,12 +544,16 @@ function MarketplacePage() {
                 <TableRow>
                   <TableCell><strong>Rice</strong></TableCell>
                   <TableCell><strong>Area</strong></TableCell>
-                  <TableCell><strong>Cost (₹)</strong></TableCell>
+                  <TableCell><strong>Cost / kg (₹)</strong></TableCell>
+                  <TableCell><strong>Quantity (kg)</strong></TableCell>
+                  <TableCell><strong>Total (₹)</strong></TableCell>
                   <TableCell><strong>Buyer contact</strong></TableCell>
                   <TableCell><strong>Buyer email</strong></TableCell>
+                  <TableCell><strong>Buyer address</strong></TableCell>
                   <TableCell><strong>Seller contact</strong></TableCell>
                   <TableCell><strong>Seller email</strong></TableCell>
                   <TableCell><strong>Purchased at</strong></TableCell>
+                  <TableCell><strong>Delivery (date & day)</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -492,11 +562,19 @@ function MarketplacePage() {
                     <TableCell>{p.rice_name}</TableCell>
                     <TableCell>{p.area || '—'}</TableCell>
                     <TableCell>{Number(p.cost).toLocaleString()}</TableCell>
+                    <TableCell>{p.quantity_kg ? Number(p.quantity_kg).toLocaleString() : '—'}</TableCell>
+                    <TableCell>{p.total_price ? Number(p.total_price).toLocaleString() : '—'}</TableCell>
                     <TableCell>{p.buyer_contact}</TableCell>
                     <TableCell>{p.buyer_email}</TableCell>
+                    <TableCell sx={{ maxWidth: 200, whiteSpace: 'normal' }}>{p.buyer_address || '—'}</TableCell>
                     <TableCell>{p.seller_contact}</TableCell>
                     <TableCell>{p.seller_email}</TableCell>
                     <TableCell>{p.purchased_at ? new Date(p.purchased_at).toLocaleString() : '—'}</TableCell>
+                    <TableCell>
+                      {p.delivery_day && p.delivery_date
+                        ? `${p.delivery_day}, ${new Date(p.delivery_date).toLocaleDateString()}`
+                        : '—'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

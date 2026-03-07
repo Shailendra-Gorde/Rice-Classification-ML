@@ -289,24 +289,22 @@ function PredictPage() {
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setPrediction(data);
-        setFeatures(data.extracted_features);
-        
-        // Show warning if prediction failed but features were extracted
-        if (data.prediction_error) {
-          setError(`⚠️ ${data.prediction_error} Features extracted successfully.`);
-        }
-        
-        // Trigger dashboard data refresh after successful prediction
-        if (data.success && data.prediction) {
-          // Notify parent to refresh dashboard data
-          window.dispatchEvent(new CustomEvent('predictionMade', { detail: data }));
-        }
+      // Show API error for 4xx/5xx or when response contains error (e.g. not a rice image)
+      if (!response.ok || data.error) {
+        setError(data.error || `Request failed (${response.status}). Please try a clear rice grain image.`);
+        setPrediction(null);
+        setFeatures(null);
+        return;
+      }
+      setPrediction(data);
+      setFeatures(data.extracted_features);
+      if (data.prediction_error) {
+        setError(`⚠️ ${data.prediction_error} Features extracted successfully.`);
+      }
+      if (data.success && data.prediction) {
+        window.dispatchEvent(new CustomEvent('predictionMade', { detail: data }));
       }
     } catch (err) {
       setError(`Error: ${err.message}. Make sure the API server is running on port 5000.`);
